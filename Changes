@@ -1,3 +1,31 @@
+=item 0.19 - February 22, 2026
+
+Fix for Perl 5.37.1+ where Perl_init_debugger() is no longer exported
+(marked with __attribute__visibility__("hidden") in proto.h via embed.fnc
+flag 'p').
+
+DB.XS rewrite of my_init_debugger() to replicate Perl_init_debugger() logic
+using only public APIs (gv_fetchpvs, sv_magicext with PL_vtbl_debugvar and
+DBVARMG_* constants, etc.) instead of calling the hidden symbol directly.
+
+ static void my_init_debugger()
+ {
+-    dTHR;
+-    Perl_init_debugger(aTHX);
++    /* full reimplementation using public APIs:
++       init_dbargs, PL_DBgv, PL_DBline, PL_DBsub,
++       PL_DBsingle/PL_DBtrace/PL_DBsignal with
++       PERL_MAGIC_debugvar magic */
+ }
+
+Removed obsolete dTHR (no-op since Perl 5.6).
+
+Fixed SIGINT handler to use #ifdef PERL_USE_3ARG_SIGHANDLER instead of
+version range check (PERL_VERSION <= 30) which broke on Perl 5.32+.
+
+-#if ((PERL_REVISION == 5) && (PERL_VERSION >= 10) && (PERL_VERSION <= 30)) && defined(HAS_SIGACTION) && defined(SA_SIGINFO)
++#ifdef PERL_USE_3ARG_SIGHANDLER
+
 =item 0.18 - May 17, 2020
 
 change in perl 5.31
